@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'nav/navigator.dart';
+import 'views/chat_list_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const SafeChildApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SafeChildApp extends StatelessWidget {
+  const SafeChildApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'SafeChild - Mensajería',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
       ),
-      // home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      onGenerateRoute: AppNavigator.generateRoute,
+      home: const ChatListScreen(userId: 1),
     );
   }
 }
+
