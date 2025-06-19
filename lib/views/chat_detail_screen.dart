@@ -41,6 +41,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       id: 0,
       senderId: widget.userId,
       receiverId: widget.contactId,
+      senderUsername: '',
+      receiverUsername: '',
       content: content,
       timestamp: DateTime.now(),
     );
