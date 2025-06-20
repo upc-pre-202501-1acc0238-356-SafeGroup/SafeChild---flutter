@@ -10,17 +10,15 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _docController = TextEditingController();
   final _passController = TextEditingController();
-  final _confirmPassController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _docController = TextEditingController();
   final _numberController = TextEditingController();
   final _streetController = TextEditingController();
   final _districtController = TextEditingController();
 
   bool _loading = false;
-  final RegExp emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
 
   @override
   Widget build(BuildContext context) {
@@ -42,84 +40,13 @@ class _RegisterPageState extends State<RegisterPage> {
               key: _formKey,
               child: Column(
                 children: [
-                  Text(
-                    'Crea tu cuenta de Tutor',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('Crea tu cuenta de Tutor', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   SizedBox(height: 32),
                   _buildBox(
                     child: TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nombre completo',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su nombre completo' : null,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  _buildBox(
-                    child: TextFormField(
                       controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Correo electrónico',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || !emailRegex.hasMatch(v.trim()) ? 'Ingrese un email válido' : null,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  _buildBox(
-                    child: TextFormField(
-                      controller: _docController,
-                      decoration: InputDecoration(
-                        labelText: 'Documento',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su documento' : null,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  _buildBox(
-                    child: TextFormField(
-                      controller: _numberController,
-                      decoration: InputDecoration(
-                        labelText: 'Número',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su número' : null,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  _buildBox(
-                    child: TextFormField(
-                      controller: _streetController,
-                      decoration: InputDecoration(
-                        labelText: 'Calle',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su calle' : null,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  _buildBox(
-                    child: TextFormField(
-                      controller: _districtController,
-                      decoration: InputDecoration(
-                        labelText: 'Distrito',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su distrito' : null,
+                      decoration: InputDecoration(labelText: 'Correo electrónico', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || !RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$').hasMatch(v.trim()) ? 'Ingrese un email válido' : null,
                     ),
                   ),
                   SizedBox(height: 16),
@@ -127,34 +54,54 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: TextFormField(
                       controller: _passController,
                       obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
+                      decoration: InputDecoration(labelText: 'Contraseña', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
                       validator: (v) => v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
                     ),
                   ),
                   SizedBox(height: 16),
                   _buildBox(
                     child: TextFormField(
-                      controller: _confirmPassController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: 'Confirmar contraseña',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                      ),
-                      validator: (v) => v != _passController.text ? 'Las contraseñas no coinciden' : null,
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: 'Nombre completo', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su nombre completo' : null,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildBox(
+                    child: TextFormField(
+                      controller: _docController,
+                      decoration: InputDecoration(labelText: 'Documento (8 dígitos)', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || !RegExp(r'^\d{8}$').hasMatch(v.trim()) ? 'Ingrese un documento válido' : null,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildBox(
+                    child: TextFormField(
+                      controller: _numberController,
+                      decoration: InputDecoration(labelText: 'Número (9 dígitos)', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || !RegExp(r'^\d{9}$').hasMatch(v.trim()) ? 'Ingrese un número válido' : null,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildBox(
+                    child: TextFormField(
+                      controller: _streetController,
+                      decoration: InputDecoration(labelText: 'Calle', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su calle' : null,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  _buildBox(
+                    child: TextFormField(
+                      controller: _districtController,
+                      decoration: InputDecoration(labelText: 'Distrito', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su distrito' : null,
                     ),
                   ),
                   if (authVM.error != null)
                     Padding(
                       padding: EdgeInsets.only(top: 12),
-                      child: Text(
-                        authVM.error!,
-                        style: TextStyle(color: Colors.red),
-                      ),
+                      child: Text(authVM.error!, style: TextStyle(color: Colors.red)),
                     ),
                   SizedBox(height: 24),
                   SizedBox(
@@ -180,16 +127,14 @@ class _RegisterPageState extends State<RegisterPage> {
                             number: _numberController.text.trim(),
                             street: _streetController.text.trim(),
                             district: _districtController.text.trim(),
-                            role: 'TUTOR', // Fijo
+                            role: 'TUTOR',
                           );
-                          final ok = await authVM.registerTutor(tutor);
+                          final ok = await authVM.register(_emailController.text.trim(), _passController.text, tutor);
                           setState(() => _loading = false);
                           if (ok) Navigator.pop(context);
                         }
                       },
-                      child: _loading
-                          ? CircularProgressIndicator(color: Colors.black)
-                          : Text('Registrarse'),
+                      child: _loading ? CircularProgressIndicator(color: Colors.black) : Text('Registrarse'),
                     ),
                   ),
                 ],

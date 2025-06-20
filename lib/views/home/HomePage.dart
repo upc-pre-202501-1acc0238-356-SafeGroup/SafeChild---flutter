@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/AuthViewModel.dart';
 import '../iam/LoginPage.dart';
+import '../profile/ProfilePage.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -10,15 +11,25 @@ class HomePage extends StatelessWidget {
     final user = authVM.user;
 
     return Scaffold(
+      backgroundColor: Color(0xFF0EA5AA),
       appBar: AppBar(
-        title: Text('Home'),
+        backgroundColor: Color(0xFF0EA5AA),
+        elevation: 0,
+        title: Text('Home', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       drawer: Drawer(
         child: Column(
           children: [
             UserAccountsDrawerHeader(
-              currentAccountPicture: CircleAvatar(
-                child: Icon(Icons.person, size: 40),
+              currentAccountPicture: GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage()));
+                },
+                child: CircleAvatar(
+                  child: Icon(Icons.person, size: 40),
+                ),
               ),
               accountName: Text(user?.username ?? 'Usuario'),
               accountEmail: Text(user?.roles.join(', ') ?? ''),
@@ -27,15 +38,14 @@ class HomePage extends StatelessWidget {
               leading: Icon(Icons.person),
               title: Text('Perfil'),
               onTap: () {
-                // Navegar a perfil (a implementar)
                 Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage()));
               },
             ),
             ListTile(
               leading: Icon(Icons.message),
               title: Text('Mensajes'),
               onTap: () {
-                // Navegar a mensajes (a implementar)
                 Navigator.pop(context);
               },
             ),
@@ -43,7 +53,6 @@ class HomePage extends StatelessWidget {
               leading: Icon(Icons.calendar_today),
               title: Text('Citas'),
               onTap: () {
-                // Navegar a citas (a implementar)
                 Navigator.pop(context);
               },
             ),
@@ -63,7 +72,16 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      body: Center(child: Text('Bienvenido a la Home')),
+      body: Center(
+        child: Text(
+          'Bienvenido a SafeChild',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }
