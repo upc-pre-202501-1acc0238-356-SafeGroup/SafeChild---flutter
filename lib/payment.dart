@@ -15,8 +15,8 @@ class Payment extends StatefulWidget {
 
 class _PaymentState extends State<Payment> {
 
-
-  double amount = 123;
+//TODO: hacer dinamico el amount
+  double amount = 4545;
   Map<String,dynamic>? intentPaymentData;
 
   showPaymentSheet() async
@@ -58,25 +58,23 @@ class _PaymentState extends State<Payment> {
   {
     try {
       Map<String, dynamic> paymentInfo = {
-        'amount': (int.parse(amountToBeCharge) * 100).toString(),
         'currency': currency,
+        'amount': (int.parse(amountToBeCharge) * 100),
         //TODO: borrar al juntar el backend
-        'payment_method_types[]': "card",
+        'reservationId': 2,
       };
 
       var response = await http.post(
-          Uri.parse("https://api.stripe.com/v1/payment_intents"),
-          body: paymentInfo,
-          headers: {
-            "Authorization": "Bearer $SecretKey",
-            "Content-Type": "application/x-www-form-urlencoded",
-          }
+        Uri.parse("http://192.168.18.21:8093/api/v1/payments"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(paymentInfo),
       );
 
       if (response.statusCode != 200) {
         throw Exception("Stripe error: ${response.statusCode}, ${response.body}");
       }
-      print("Intentando crear makeIntentForPayment...");
       print("response = " + response.body);
       return jsonDecode(response.body);
 
@@ -108,13 +106,12 @@ class _PaymentState extends State<Payment> {
         paymentSheetParameters: SetupPaymentSheetParameters(
           allowsDelayedPaymentMethods: true,
           merchantDisplayName: "SafeChild merchant",
-          paymentIntentClientSecret: intentPaymentData!['client_secret'],
+          paymentIntentClientSecret: intentPaymentData!['client_secret'].toString(),
           style: ThemeMode.system,
         )
       ).then((v){
         print(v);
       });
-      print("Intentando crear paymentSheetInitialization...");
 
       showPaymentSheet();
 
@@ -135,10 +132,9 @@ class _PaymentState extends State<Payment> {
           children: [
             ElevatedButton(
               onPressed: () async {
-                print("Botón presionado...");
                 await paymentSheetInitialization(
                     amount.round().toString(),
-                    "usd"
+                    "USD"
                 );
               },
               style: ElevatedButton.styleFrom(
