@@ -1,0 +1,162 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:http/http.dart' as http;
+import 'package:safechild/keys.dart';
+
+class Payment extends StatefulWidget {
+  const Payment({super.key});
+
+  @override
+  State<Payment> createState() => _PaymentState();
+}
+
+class _PaymentState extends State<Payment> {
+
+
+  double amount = 123;
+  Map<String,dynamic>? intentPaymentData;
+
+  showPaymentSheet() async
+  {
+    try{
+      await Stripe.instance.presentPaymentSheet().then((value){
+        intentPaymentData = null;
+      }).onError((errorMsg,sTrace){
+        if(kDebugMode){
+          print(sTrace);
+        }
+        print(errorMsg.toString() + sTrace.toString());
+      });
+
+      print("Intentando crear showPaymentSheet...");
+
+
+    }
+    on StripeException catch(error){
+      if(kDebugMode){
+        print(error);
+      }
+      showDialog(
+          context: context,
+          builder: (c)=> AlertDialog(
+            content: Text("Cancelled"),
+      ));
+    }
+    catch(errorMsg){
+      if(kDebugMode){
+        print(errorMsg);
+      }
+      print(errorMsg.toString());
+    }
+  }
+
+
+  makeIntentForPayment(amountToBeCharge, currency) async
+  {
+    try {
+      Map<String, dynamic> paymentInfo = {
+        'amount': (int.parse(amountToBeCharge) * 100).toString(),
+        'currency': currency,
+        //TODO: borrar al juntar el backend
+        'payment_method_types[]': "card",
+      };
+
+      var response = await http.post(
+          Uri.parse("https://api.stripe.com/v1/payment_intents"),
+          body: paymentInfo,
+          headers: {
+            "Authorization": "Bearer $SecretKey",
+            "Content-Type": "application/x-www-form-urlencoded",
+          }
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception("Stripe error: ${response.statusCode}, ${response.body}");
+      }
+      print("Intentando crear makeIntentForPayment...");
+      print("response = " + response.body);
+      return jsonDecode(response.body);
+
+
+    } catch(errorMsg){
+      if(kDebugMode){
+        print(errorMsg);
+      }
+      print(errorMsg.toString());
+    }
+  }
+
+  paymentSheetInitialization(amountToBeCharge,currency) async
+  {
+    try {
+      intentPaymentData = await makeIntentForPayment(amountToBeCharge, currency);
+
+      if (intentPaymentData == null || intentPaymentData!['client_secret'] == null) {
+        showDialog(
+          context: context,
+          builder: (c) => AlertDialog(
+            content: Text("Error al crear el PaymentIntent. Revisa tu clave y conexión."),
+          ),
+        );
+        return;
+      }
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          allowsDelayedPaymentMethods: true,
+          merchantDisplayName: "SafeChild merchant",
+          paymentIntentClientSecret: intentPaymentData!['client_secret'],
+          style: ThemeMode.system,
+        )
+      ).then((v){
+        print(v);
+      });
+      print("Intentando crear paymentSheetInitialization...");
+
+      showPaymentSheet();
+
+    } catch(errorMsg,s){
+        if(kDebugMode){
+          print(s);
+        }
+      print(errorMsg.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                print("Botón presionado...");
+                await paymentSheetInitialization(
+                    amount.round().toString(),
+                    "usd"
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                "Make Payment",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+
+          ],
+        ) ,
+      ),
+    );
+  }
+}
