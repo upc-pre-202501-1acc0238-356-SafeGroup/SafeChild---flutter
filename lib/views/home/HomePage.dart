@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/AuthViewModel.dart';
 import '../iam/LoginPage.dart';
 import '../profile/ProfilePage.dart';
+import '../payments/payment.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -54,6 +55,14 @@ class HomePage extends StatelessWidget {
               title: Text('Citas'),
               onTap: () {
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.payment),
+              title: Text('Pagos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => Payment()));
               },
             ),
             Spacer(),
