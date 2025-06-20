@@ -1,4 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+
+import 'payment.dart';
+
+void main() async
+{
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  Stripe.publishableKey = dotenv.env['PUBLISHABLE_KEY'] ?? '';
+  await Stripe.instance.applySettings();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
 import 'package:provider/provider.dart';
 import 'viewmodels/AuthViewModel.dart';
 import 'views/iam/LoginPage.dart';
@@ -19,6 +37,7 @@ class MyApp extends StatelessWidget {
       title: 'SafeChild Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
       home: LoginPage(),
     );
