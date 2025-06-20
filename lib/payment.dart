@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
-import 'package:safechild/keys.dart';
 
 class Payment extends StatefulWidget {
   const Payment({super.key});
@@ -65,7 +65,8 @@ class _PaymentState extends State<Payment> {
       };
 
       var response = await http.post(
-        Uri.parse("http://192.168.18.21:8093/api/v1/payments"),
+     //   Uri.parse("http://192.168.18.21:8093/api/v1/payments"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}"),
         headers: {
           'Content-Type': 'application/json',
         },
