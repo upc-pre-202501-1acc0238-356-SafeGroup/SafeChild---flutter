@@ -1,12 +1,12 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
-import '../../viewmodels/AuthViewModel.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_state.dart';
 
 class Payment extends StatefulWidget {
   const Payment({super.key});
@@ -16,40 +16,95 @@ class Payment extends StatefulWidget {
 }
 
 class _PaymentState extends State<Payment> {
-  // Monto mínimo: 0.50 USD (50 centavos)
-  double amount = 4.55; // Cambia este valor para probar
+  double amount = 4.55;
   Map<String, dynamic>? intentPaymentData;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFF0EA5AA),
+      appBar: AppBar(
+        backgroundColor: Color(0xFF0EA5AA),
+        elevation: 0,
+        title: Text('Pagos', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Monto a pagar: \$${amount.toStringAsFixed(2)}',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFD0D9DB),
+                foregroundColor: Colors.black87,
+                textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              onPressed: () async {
+                await makeIntentForPayment(amount.toString(), 'USD');
+                if (intentPaymentData != null) {
+                  await showPaymentSheet();
+                }
+              },
+              child: Text('Realizar Pago'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   showPaymentSheet() async {
     try {
-      await Stripe.instance.presentPaymentSheet();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pago realizado con éxito')),
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: intentPaymentData!['clientSecret'],
+          style: ThemeMode.dark,
+          merchantDisplayName: "SafeChild",
+        ),
       );
-      setState(() {
-        intentPaymentData = null;
-      });
+
+      await Stripe.instance.presentPaymentSheet();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('¡Pago completado con éxito!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } on StripeException catch (error) {
-      if (kDebugMode) {
-        print('StripeException: $error');
-      }
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          content: Text('El pago fue cancelado'),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${error.error.localizedMessage}'),
+          backgroundColor: Colors.red,
         ),
       );
     } catch (errorMsg) {
-      if (kDebugMode) {
-        print(errorMsg.toString());
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $errorMsg'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   makeIntentForPayment(amountToBeCharge, currency) async {
     try {
-      final authVM = Provider.of<AuthViewModel>(context, listen: false);
-      final token = authVM.user?.token;
+      // Aquí obtenemos el token del AuthBloc en lugar de AuthViewModel
+      final authState = context.read<AuthBloc>().state;
+      String? token;
+
+      if (authState is AuthAuthenticated) {
+        token = authState.user.token;
+      }
+
       if (token == null) {
         throw Exception('No autenticado');
       }
@@ -68,105 +123,32 @@ class _PaymentState extends State<Payment> {
       var response = await http.post(
         Uri.parse(dotenv.env['URL_BACKEND_LOCAL']!),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode(paymentInfo),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception("Stripe error: ${response.statusCode}, ${response.body}");
+      if (response.statusCode == 200) {
+        intentPaymentData = json.decode(response.body);
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al procesar el pago: ${response.body}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
       }
-      return jsonDecode(response.body);
-    } catch (errorMsg) {
-      if (kDebugMode) {
-        print(errorMsg.toString());
-      }
-      rethrow;
-    }
-  }
-
-  paymentSheetInitialization(amountToBeCharge, currency) async {
-    try {
-      intentPaymentData = await makeIntentForPayment(amountToBeCharge, currency);
-
-      if (intentPaymentData == null || intentPaymentData!['client_secret'] == null) {
-        throw Exception('No se pudo obtener el client_secret');
-      }
-
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: intentPaymentData!['client_secret'],
-          merchantDisplayName: 'SafeChild',
-        ),
-      );
-
-      showPaymentSheet();
-    } catch (errorMsg, s) {
-      if (kDebugMode) {
-        print(errorMsg);
-        print(s);
-      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMsg.toString())),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
+      return false;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Pago'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Color(0xFF0EA5AA),
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () async {
-                await paymentSheetInitialization(
-                  amount.toStringAsFixed(2),
-                  "USD",
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                "Make Payment",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.arrow_back),
-              label: Text('Volver'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF0EA5AA),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

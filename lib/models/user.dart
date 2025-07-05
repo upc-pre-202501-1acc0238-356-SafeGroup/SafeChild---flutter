@@ -10,7 +10,10 @@ class User {
     return User(
       id: json['id'],
       username: json['username'],
-      roles: List<String>.from(json['roles']),
+      // Manejar el caso donde 'roles' es nulo en la respuesta
+      roles: json['roles'] != null
+          ? List<String>.from(json['roles'])
+          : ['TUTOR'], // Valor predeterminado
       token: json['token'],
     );
   }

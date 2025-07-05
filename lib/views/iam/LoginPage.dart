@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../viewmodels/AuthViewModel.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
+import '../../blocs/auth/auth_state.dart';
 import '../home/HomePage.dart';
 import 'RegisterPage.dart';
 
 class LoginPage extends StatelessWidget {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
-
-  // Regex para validar email
   final RegExp emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
 
   @override
   Widget build(BuildContext context) {
-    final authVM = Provider.of<AuthViewModel>(context);
     final ValueNotifier<String?> emailError = ValueNotifier<String?>(null);
 
     return Scaffold(
@@ -91,47 +90,86 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (authVM.error != null)
-                  Padding(
-                    padding: EdgeInsets.only(top: 12),
-                    child: Text(
-                      authVM.error!,
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFD0D9DB),
-                      foregroundColor: Colors.black87,
-                      textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () async {
-                      final email = _userController.text.trim();
-                      if (!emailRegex.hasMatch(email)) {
-                        emailError.value = 'Ingrese un email válido';
-                        return;
-                      } else {
-                        emailError.value = null;
-                      }
-                      bool ok = await authVM.login(email, _passController.text);
-                      if (ok) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomePage()));
-                    },
-                    child: Text('Iniciar sesión'),
-                  ),
+                BlocConsumer<AuthBloc, AuthState>(
+                  listener: (context, state) {
+                    if (state is AuthAuthenticated) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => HomePage()),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (state is AuthUnauthenticated && state.error != null)
+                          Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Text(
+                              state.error!,
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        if (state is AuthError)
+                          Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Text(
+                              state.message,
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        SizedBox(height: 24),
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFD0D9DB),
+                              foregroundColor: Colors.black87,
+                              textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: state is AuthLoading
+                                ? null
+                                : () {
+                              final email = _userController.text.trim();
+                              if (!emailRegex.hasMatch(email)) {
+                                emailError.value = 'Ingrese un email válido';
+                                return;
+                              } else {
+                                emailError.value = null;
+                              }
+                              context.read<AuthBloc>().add(
+                                AuthLoginRequested(
+                                  email,
+                                  _passController.text,
+                                ),
+                              );
+                            },
+                            child: state is AuthLoading
+                                ? CircularProgressIndicator()
+                                : Text('Iniciar sesión'),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterPage())),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => RegisterPage()),
+                  ),
                   child: Text(
                     '¿No tienes cuenta? Regístrate',
-                    style: TextStyle(color: Colors.white, fontSize: 16, decoration: TextDecoration.underline),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ],
