@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../viewmodels/AuthViewModel.dart';
-import '../../modelo/beans/Tutor.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
+import '../../blocs/auth/auth_state.dart';
+import '../../models/tutor.dart';
+import '../home/HomePage.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -18,12 +21,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _streetController = TextEditingController();
   final _districtController = TextEditingController();
 
-  bool _loading = false;
-
   @override
   Widget build(BuildContext context) {
-    final authVM = Provider.of<AuthViewModel>(context);
-
     return Scaffold(
       backgroundColor: Color(0xFF0EA5AA),
       appBar: AppBar(
@@ -98,44 +97,66 @@ class _RegisterPageState extends State<RegisterPage> {
                       validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su distrito' : null,
                     ),
                   ),
-                  if (authVM.error != null)
-                    Padding(
-                      padding: EdgeInsets.only(top: 12),
-                      child: Text(authVM.error!, style: TextStyle(color: Colors.red)),
-                    ),
-                  SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFD0D9DB),
-                        foregroundColor: Colors.black87,
-                        textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: _loading
-                          ? null
-                          : () async {
-                        if (_formKey.currentState!.validate()) {
-                          setState(() => _loading = true);
-                          final tutor = Tutor(
-                            fullName: _nameController.text.trim(),
-                            email: _emailController.text.trim(),
-                            doc: _docController.text.trim(),
-                            password: _passController.text,
-                            number: _numberController.text.trim(),
-                            street: _streetController.text.trim(),
-                            district: _districtController.text.trim(),
-                            role: 'TUTOR',
-                          );
-                          final ok = await authVM.register(_emailController.text.trim(), _passController.text, tutor);
-                          setState(() => _loading = false);
-                          if (ok) Navigator.pop(context);
-                        }
-                      },
-                      child: _loading ? CircularProgressIndicator(color: Colors.black) : Text('Registrarse'),
-                    ),
+                  BlocConsumer<AuthBloc, AuthState>(
+                    listener: (context, state) {
+                      if (state is AuthAuthenticated) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => HomePage()),
+                        );
+                      }
+                    },
+                    builder: (context, state) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (state is AuthError)
+                            Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: Text(state.message, style: TextStyle(color: Colors.red)),
+                            ),
+                          SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFFD0D9DB),
+                                foregroundColor: Colors.black87,
+                                textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: state is AuthLoading
+                                  ? null
+                                  : () {
+                                if (_formKey.currentState!.validate()) {
+                                  final tutor = Tutor(
+                                    fullName: _nameController.text.trim(),
+                                    email: _emailController.text.trim(),
+                                    doc: _docController.text.trim(),
+                                    password: _passController.text,
+                                    number: _numberController.text.trim(),
+                                    street: _streetController.text.trim(),
+                                    district: _districtController.text.trim(),
+                                    role: 'TUTOR',
+                                  );
+                                  context.read<AuthBloc>().add(
+                                    AuthRegisterRequested(
+                                      _emailController.text.trim(),
+                                      _passController.text,
+                                      tutor,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: state is AuthLoading
+                                  ? CircularProgressIndicator(color: Colors.black)
+                                  : Text('Registrarse'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
