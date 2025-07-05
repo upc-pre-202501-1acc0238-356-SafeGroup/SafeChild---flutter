@@ -14,4 +14,9 @@ class ProfileRepository {
   Future<bool> updateTutor(int tutorId, Tutor tutor) async {
     return await _profileService.updateTutor(tutorId, tutor);
   }
+
+  Future<List<String>> fetchDistricts() async {
+    return await _profileService.fetchDistricts();
+  }
+
 }

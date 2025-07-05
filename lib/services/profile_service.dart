@@ -17,18 +17,14 @@ class ProfileService {
       if (authState is AuthAuthenticated) {
         token = authState.user.token;
         debugPrint('Token de autenticación obtenido');
-      }
-
-      if (token == null) {
+      } else {
         debugPrint('No se encontró token de autenticación');
-        // Continuamos sin token, ya que el endpoint podría no requerirlo
       }
 
       final url = Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId');
       debugPrint('Enviando petición a: $url');
 
       final Map<String, String> headers = {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
@@ -84,6 +80,27 @@ class ProfileService {
     } catch (e) {
       debugPrint('Error en updateTutor: $e');
       return false;
+    }
+  }
+
+  Future<List<String>> fetchDistricts() async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/districts');
+
+      final response = await http.get(url, headers: {
+        'Accept': '*/*',
+      });
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = jsonDecode(response.body);
+        return List<String>.from(jsonData);
+      } else {
+        debugPrint('Error obteniendo distritos: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Error en fetchDistricts: $e');
+      return [];
     }
   }
 }

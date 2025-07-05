@@ -6,6 +6,7 @@ import '../../blocs/profile/profile_bloc.dart';
 import '../../blocs/profile/profile_event.dart';
 import '../../blocs/profile/profile_state.dart';
 import '../../models/tutor.dart';
+import '../../repositories/profile_repository.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -16,13 +17,17 @@ class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _numberController = TextEditingController();
   final _streetController = TextEditingController();
-  final _districtController = TextEditingController();
+
+  List<String> _districts = [];
+  String? _selectedDistrict;
   bool updating = false;
 
   @override
   void initState() {
     super.initState();
-    // Obtener el estado de autenticación
+    // Cargar distritos y perfil
+    _loadDistricts();
+
     final authState = context.read<AuthBloc>().state;
     debugPrint('Estado de autenticación: $authState');
 
@@ -33,6 +38,22 @@ class _ProfilePageState extends State<ProfilePage> {
     } else {
       debugPrint('Usuario no autenticado');
     }
+  }
+
+  Future<void> _loadDistricts() async {
+    final profileRepository = ProfileRepository();
+    final districts = await profileRepository.fetchDistricts();
+    setState(() {
+      _districts = districts;
+    });
+  }
+
+  // Método para formatear el distrito para mostrar
+  String _formatDistrict(String backendValue) {
+    return backendValue
+        .split('_')
+        .map((word) => word.substring(0, 1) + word.substring(1).toLowerCase())
+        .join(' ');
   }
 
   @override
@@ -57,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
             if (_numberController.text.isEmpty) {
               _numberController.text = tutor.number;
               _streetController.text = tutor.street;
-              _districtController.text = tutor.district;
+              _selectedDistrict = tutor.district;
             }
 
             return SingleChildScrollView(
@@ -86,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(height: 16),
                       _editableField('Calle', _streetController, r'.+', 'Ingrese su calle'),
                       SizedBox(height: 16),
-                      _editableField('Distrito', _districtController, r'.+', 'Ingrese su distrito'),
+                      _districtDropdown(),
                       SizedBox(height: 24),
                       BlocConsumer<ProfileBloc, ProfileState>(
                         listenWhen: (previous, current) =>
@@ -137,13 +158,44 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _districtDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFB4C2C8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedDistrict,
+        decoration: InputDecoration(
+          labelText: 'Distrito',
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 18),
+        ),
+        items: _districts.map((district) {
+          return DropdownMenuItem<String>(
+            value: district,
+            child: Text(_formatDistrict(district)),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedDistrict = value;
+          });
+        },
+        validator: (v) => v == null ? 'Seleccione un distrito' : null,
+        isExpanded: true,
+      ),
+    );
+  }
+
   void _updateProfile() {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => updating = true);
 
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated && authState.tutorId != null) {
+    if (authState is AuthAuthenticated) {
       final profileState = context.read<ProfileBloc>().state;
       if (profileState is ProfileLoaded) {
         final tutor = profileState.tutor;
@@ -155,7 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
           password: tutor.password,
           number: _numberController.text.trim(),
           street: _streetController.text.trim(),
-          district: _districtController.text.trim(),
+          district: _selectedDistrict ?? tutor.district,
           role: tutor.role,
           profileId: tutor.profileId,
         );
