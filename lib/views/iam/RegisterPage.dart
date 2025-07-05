@@ -4,6 +4,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../models/tutor.dart';
+import '../../repositories/profile_repository.dart';
 import '../home/HomePage.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -19,7 +20,31 @@ class _RegisterPageState extends State<RegisterPage> {
   final _docController = TextEditingController();
   final _numberController = TextEditingController();
   final _streetController = TextEditingController();
-  final _districtController = TextEditingController();
+
+  List<String> _districts = [];
+  String? _selectedDistrict;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDistricts();
+  }
+
+  Future<void> _loadDistricts() async {
+    final profileRepository = ProfileRepository();
+    final districts = await profileRepository.fetchDistricts();
+    setState(() {
+      _districts = districts;
+    });
+  }
+
+  // Método para formatear el distrito para mostrar
+  String _formatDistrict(String backendValue) {
+    return backendValue
+        .split('_')
+        .map((word) => word.substring(0, 1) + word.substring(1).toLowerCase())
+        .join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,10 +116,26 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   SizedBox(height: 16),
                   _buildBox(
-                    child: TextFormField(
-                      controller: _districtController,
-                      decoration: InputDecoration(labelText: 'Distrito', border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18)),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Ingrese su distrito' : null,
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedDistrict,
+                      decoration: InputDecoration(
+                        labelText: 'Distrito',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                      ),
+                      items: _districts.map((district) {
+                        return DropdownMenuItem<String>(
+                          value: district,
+                          child: Text(_formatDistrict(district)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDistrict = value;
+                        });
+                      },
+                      validator: (v) => v == null ? 'Seleccione un distrito' : null,
+                      isExpanded: true,
                     ),
                   ),
                   BlocConsumer<AuthBloc, AuthState>(
@@ -137,7 +178,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                     password: _passController.text,
                                     number: _numberController.text.trim(),
                                     street: _streetController.text.trim(),
-                                    district: _districtController.text.trim(),
+                                    district: _selectedDistrict ?? "",
                                     role: 'TUTOR',
                                   );
                                   context.read<AuthBloc>().add(

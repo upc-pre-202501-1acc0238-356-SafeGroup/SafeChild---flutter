@@ -20,12 +20,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await authRepository.signIn(event.username, event.password);
-      if (user != null) {
+      if (user != null && user.token != null) {
         // Obtener el tutorId usando el ID del usuario
         final tutorId = await _getTutorIdFromUserId(user.id);
         emit(AuthAuthenticated(user, tutorId: tutorId));
       } else {
-        emit(const AuthUnauthenticated('Credenciales incorrectas'));
+        emit(const AuthUnauthenticated('Credenciales incorrectas o token no válido'));
       }
     } catch (e) {
       emit(AuthError('Error al iniciar sesión: ${e.toString()}'));

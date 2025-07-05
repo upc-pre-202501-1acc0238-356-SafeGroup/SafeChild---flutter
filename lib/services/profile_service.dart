@@ -16,17 +16,14 @@ class ProfileService {
 
       if (authState is AuthAuthenticated) {
         token = authState.user.token;
-        debugPrint('Token de autenticación obtenido');
-      } else {
-        debugPrint('No se encontró token de autenticación');
+        debugPrint('Token de autenticación obtenido: ${token?.substring(0, 10)}...');
       }
 
       final url = Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId');
       debugPrint('Enviando petición a: $url');
 
-      final Map<String, String> headers = {
-        'Accept': 'application/json',
-      };
+      // Simplificar los headers para peticiones GET
+      final headers = <String, String>{};
 
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
@@ -35,6 +32,7 @@ class ProfileService {
       final response = await http.get(url, headers: headers);
 
       debugPrint('Respuesta obtener tutor: ${response.statusCode}');
+      debugPrint('Cuerpo de respuesta: ${response.body}');
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);

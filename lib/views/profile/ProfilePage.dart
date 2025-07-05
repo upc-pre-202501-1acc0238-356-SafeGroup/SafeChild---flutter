@@ -25,18 +25,19 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Cargar distritos y perfil
+
     _loadDistricts();
 
     final authState = context.read<AuthBloc>().state;
     debugPrint('Estado de autenticación: $authState');
 
     if (authState is AuthAuthenticated) {
-      final tutorId = authState.tutorId ?? authState.user.id;
-      debugPrint('Cargando perfil para tutorId: $tutorId');
-      context.read<ProfileBloc>().add(ProfileFetched(tutorId));
-    } else {
-      debugPrint('Usuario no autenticado');
+      final tutorId = authState.tutorId;
+      if (tutorId != null) {
+        context.read<ProfileBloc>().add(ProfileFetched(tutorId));
+      } else {
+        debugPrint('Error: No se encontró ID de tutor');
+      }
     }
   }
 
@@ -70,88 +71,116 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context, state) {
           if (state is ProfileLoading) {
             return Center(child: CircularProgressIndicator(color: Colors.white));
-          } else if (state is ProfileError) {
-            return Center(child: Text(state.message, style: TextStyle(color: Colors.white)));
           } else if (state is ProfileLoaded) {
             final tutor = state.tutor;
-            // Actualiza controladores solo cuando se carga por primera vez
-            if (_numberController.text.isEmpty) {
-              _numberController.text = tutor.number;
-              _streetController.text = tutor.street;
-              _selectedDistrict = tutor.district;
-            }
+            _numberController.text = tutor.number;
+            _streetController.text = tutor.street;
+            _selectedDistrict = _selectedDistrict ?? tutor.district;
 
-            return SingleChildScrollView(
+            return BlocListener<ProfileBloc, ProfileState>(
+              listener: (context, state) {
+                if (state is ProfileUpdateSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Perfil actualizado con éxito'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  setState(() => updating = false);
+                } else if (state is ProfileError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  setState(() => updating = false);
+                }
+              },
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: EdgeInsets.all(16),
                 child: Form(
                   key: _formKey,
-                  child: Column(
+                  child: ListView(
                     children: [
-                      Text(
-                        'Bienvenido a SafeChild',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 24),
                       _readonlyField('Nombre completo', tutor.fullName),
                       SizedBox(height: 16),
-                      _readonlyField('Correo', tutor.email),
+                      _readonlyField('Correo electrónico', tutor.email),
                       SizedBox(height: 16),
                       _readonlyField('Documento', tutor.doc),
                       SizedBox(height: 16),
-                      _editableField('Número (9 dígitos)', _numberController, r'^\d{9}$', 'Ingrese un número válido'),
+                      _editableField(
+                          'Número de teléfono',
+                          _numberController,
+                          r'^\d{9}$',
+                          'Ingrese un número válido (9 dígitos)'
+                      ),
                       SizedBox(height: 16),
-                      _editableField('Calle', _streetController, r'.+', 'Ingrese su calle'),
+                      _editableField(
+                          'Calle',
+                          _streetController,
+                          r'^.+$',
+                          'Ingrese una calle válida'
+                      ),
                       SizedBox(height: 16),
                       _districtDropdown(),
-                      SizedBox(height: 24),
-                      BlocConsumer<ProfileBloc, ProfileState>(
-                        listenWhen: (previous, current) =>
-                        current is ProfileUpdateSuccess ||
-                            (current is ProfileError && previous is! ProfileError),
-                        listener: (context, state) {
-                          if (state is ProfileUpdateSuccess) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Datos actualizados'))
-                            );
-                            setState(() => updating = false);
-                          } else if (state is ProfileError) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(state.message))
-                            );
-                            setState(() => updating = false);
-                          }
-                        },
-                        builder: (context, _) {
-                          return SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF72C3CF),
-                                foregroundColor: Colors.black87,
-                                textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              onPressed: updating ? null : _updateProfile,
-                              child: updating
-                                  ? CircularProgressIndicator(color: Colors.black)
-                                  : Text('Guardar cambios'),
+                      SizedBox(height: 32),
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFD0D9DB),
+                            foregroundColor: Colors.black87,
+                            textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          );
-                        },
+                          ),
+                          onPressed: updating ? null : _updateProfile,
+                          child: updating
+                              ? CircularProgressIndicator(color: Colors.black)
+                              : Text('Actualizar perfil'),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             );
+          } else if (state is ProfileError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white, size: 64),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error al cargar el perfil',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                  Text(
+                    state.message,
+                    style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                  ),
+                  SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () {
+                      final authState = context.read<AuthBloc>().state;
+                      if (authState is AuthAuthenticated) {
+                        final tutorId = authState.tutorId ?? authState.user.id;
+                        context.read<ProfileBloc>().add(ProfileFetched(tutorId));
+                      }
+                    },
+                    child: Text(
+                      'Reintentar',
+                      style: TextStyle(color: Colors.white, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ),
+            );
           } else {
-            return Center(child: Text('No hay datos disponibles', style: TextStyle(color: Colors.white)));
+            return Center(child: Text('Cargando...', style: TextStyle(color: Colors.white)));
           }
         },
       ),
