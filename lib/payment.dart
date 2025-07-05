@@ -59,9 +59,8 @@ class _PaymentState extends State<Payment> {
     try {
       Map<String, dynamic> paymentInfo = {
         'currency': currency,
-        'amount': (int.parse(amountToBeCharge) * 100),
         //TODO: borrar al juntar el backend
-        'reservationId': 2,
+        'reservation': 1,
       };
 
       var response = await http.post(
@@ -88,41 +87,126 @@ class _PaymentState extends State<Payment> {
     }
   }
 
-  paymentSheetInitialization(amountToBeCharge,currency) async
-  {
+  Future<void> paymentStatusActualization(int paymentId) async {
+    try {
+      // 1. Obtener los datos del Payment desde tu backend
+      final paymentResponse = await http.get(
+        //    Uri.parse("http://192.168.18.21:8090/api/v1/payments/$paymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/$paymentId"),
+      );
+
+      if (paymentResponse.statusCode != 200) {
+        throw Exception("Error al obtener el Payment: ${paymentResponse.body}");
+      }
+
+      final paymentData = jsonDecode(paymentResponse.body);
+      final stripePaymentId = paymentData['stripePaymentId'];
+
+      if (stripePaymentId == null || stripePaymentId.isEmpty) {
+        throw Exception("stripePaymentId no encontrado.");
+      }
+
+      final stripeIntentResponse = await http.get(
+        //Uri.parse("http://192.168.18.21:8090/api/v1/payments/paymentIntent/$stripePaymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/paymentIntent/$stripePaymentId"),
+      );
+
+      if (stripeIntentResponse.statusCode != 200) {
+        throw Exception("Error al consultar el PaymentIntent: ${stripeIntentResponse.body}");
+      }
+
+      final stripeData = jsonDecode(stripeIntentResponse.body);
+      final stripeStatus = stripeData['status'].toString().toUpperCase();
+
+      final updateResponse = await http.put(
+        // Uri.parse("http://192.168.18.21:8090/api/v1/payments/status/$paymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/status/$paymentId"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "paymentStatus": stripeStatus,
+        }),
+      );
+
+
+      if (updateResponse.statusCode == 200) {
+        print("✅ Estado actualizado correctamente en el backend.");
+
+        // 👇 Aquí muestra el SnackBar al usuario
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ Pago realizado y confirmado exitosamente."),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        print("❌ Error al actualizar el estado en el backend: ${updateResponse.body}");
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("⚠️ No se pudo actualizar el estado del pago: ${updateResponse.body}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
+
+      if (updateResponse.statusCode == 200) {
+        print("✅ Estado actualizado correctamente en el backend.");
+      } else {
+        print("❌ Error al actualizar el estado en el backend: ${updateResponse.body}");
+      }
+    } catch (e) {
+      print("❌ Error en el flujo de actualización de estado: $e");
+    }
+  }
+
+
+
+
+  paymentSheetInitialization(amountToBeCharge, currency) async {
     try {
       intentPaymentData = await makeIntentForPayment(amountToBeCharge, currency);
 
       if (intentPaymentData == null || intentPaymentData!['client_secret'] == null) {
         showDialog(
           context: context,
-          builder: (c) => AlertDialog(
+          builder: (c) => const AlertDialog(
             content: Text("Error al crear el PaymentIntent. Revisa tu clave y conexión."),
           ),
         );
         return;
       }
 
+      final paymentId = intentPaymentData?['payment_id'];
+      if (paymentId == null) {
+        throw Exception("payment_id no encontrado en la respuesta.");
+      }
+
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           allowsDelayedPaymentMethods: true,
           merchantDisplayName: "SafeChild merchant",
-          paymentIntentClientSecret: intentPaymentData!['client_secret'].toString(),
+          paymentIntentClientSecret: intentPaymentData!['client_secret'],
           style: ThemeMode.system,
-        )
-      ).then((v){
-        print(v);
-      });
+        ),
+      );
 
-      showPaymentSheet();
+      await showPaymentSheet(); // usa await aquí para esperar finalización
+      await Future.delayed(const Duration(seconds: 3)); // pequeña espera por seguridad
+      await paymentStatusActualization(paymentId);
 
-    } catch(errorMsg,s){
-        if(kDebugMode){
-          print(s);
-        }
-      print(errorMsg.toString());
+    } catch (error, s) {
+      if (kDebugMode) print(s);
+      print("❌ Error en paymentSheetInitialization: $error");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
