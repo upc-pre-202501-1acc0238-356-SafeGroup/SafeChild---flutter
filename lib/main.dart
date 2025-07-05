@@ -13,22 +13,36 @@ import 'views/iam/LoginPage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // Configuración de Stripe
   Stripe.publishableKey = dotenv.env['PUBLISHABLE_KEY'] ?? '';
   await Stripe.instance.applySettings();
 
-  // Creamos e inicializamos el AuthBloc
-  final authBloc = AuthBloc(authRepository: AuthRepository());
+  // Crear instancias de repositorios
+  final authRepository = AuthRepository();
+  final profileRepository = ProfileRepository();
 
-  // Configuramos el proveedor de estado
+  // Crear e inicializar el AuthBloc
+  final authBloc = AuthBloc(authRepository: authRepository);
+
+  // Configurar el AuthStateProvider con el AuthBloc
   AuthStateProvider().setAuthBloc(authBloc);
 
-  runApp(MyApp(authBloc: authBloc));
+  runApp(MyApp(
+      authBloc: authBloc,
+      profileRepository: profileRepository
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final AuthBloc authBloc;
+  final ProfileRepository profileRepository;
 
-  const MyApp({Key? key, required this.authBloc}) : super(key: key);
+  const MyApp({
+    Key? key,
+    required this.authBloc,
+    required this.profileRepository
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +53,7 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<ProfileBloc>(
           create: (context) => ProfileBloc(
-            profileRepository: ProfileRepository(),
+            profileRepository: profileRepository,
           ),
         ),
       ],

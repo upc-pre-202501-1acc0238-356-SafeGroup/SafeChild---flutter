@@ -10,6 +10,7 @@ class ProfileService {
   Future<Tutor?> fetchTutor(int tutorId) async {
     try {
       debugPrint('Intentando obtener tutor con ID: $tutorId');
+
       final authState = AuthStateProvider().getAuthState();
       String? token;
 
@@ -20,25 +21,34 @@ class ProfileService {
 
       if (token == null) {
         debugPrint('No se encontró token de autenticación');
-        return null;
+        // Continuamos sin token, ya que el endpoint podría no requerirlo
       }
 
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token'
-        },
-      );
+      final url = Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId');
+      debugPrint('Enviando petición a: $url');
 
-      debugPrint('Respuesta obtener tutor: ${response.statusCode} - ${response.body}');
+      final Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.get(url, headers: headers);
+
+      debugPrint('Respuesta obtener tutor: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        return Tutor.fromJson(jsonDecode(response.body));
+        final jsonData = jsonDecode(response.body);
+        return Tutor.fromJson(jsonData);
+      } else {
+        debugPrint('Error en la respuesta del servidor: ${response.statusCode} - ${response.body}');
+        return null;
       }
-      return null;
     } catch (e) {
-      debugPrint('Error al obtener datos del tutor: $e');
+      debugPrint('Error en fetchTutor: $e');
       return null;
     }
   }
@@ -52,22 +62,27 @@ class ProfileService {
         token = authState.user.token;
       }
 
-      if (token == null) {
-        return false;
+      final url = Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId');
+
+      final Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
       }
 
       final response = await http.put(
-        Uri.parse('${ApiConfig.baseUrl}/tutors/$tutorId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token'
-        },
+        url,
+        headers: headers,
         body: jsonEncode(tutor.toJson()),
       );
 
+      debugPrint('Respuesta actualizar tutor: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      debugPrint('Error al actualizar datos del tutor: $e');
+      debugPrint('Error en updateTutor: $e');
       return false;
     }
   }

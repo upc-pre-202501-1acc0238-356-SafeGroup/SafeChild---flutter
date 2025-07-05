@@ -22,10 +22,16 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Obtener el ID del tutor desde el AuthState
+    // Obtener el estado de autenticación
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated && authState.tutorId != null) {
-      context.read<ProfileBloc>().add(ProfileFetched(authState.tutorId!));
+    debugPrint('Estado de autenticación: $authState');
+
+    if (authState is AuthAuthenticated) {
+      final tutorId = authState.tutorId ?? authState.user.id;
+      debugPrint('Cargando perfil para tutorId: $tutorId');
+      context.read<ProfileBloc>().add(ProfileFetched(tutorId));
+    } else {
+      debugPrint('Usuario no autenticado');
     }
   }
 
