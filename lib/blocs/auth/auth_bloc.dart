@@ -21,7 +21,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final user = await authRepository.signIn(event.username, event.password);
       if (user != null) {
-        emit(AuthAuthenticated(user));
+        // Obtener el tutorId usando el ID del usuario
+        final tutorId = await _getTutorIdFromUserId(user.id);
+        emit(AuthAuthenticated(user, tutorId: tutorId));
       } else {
         emit(const AuthUnauthenticated('Credenciales incorrectas'));
       }
@@ -29,6 +31,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthError('Error al iniciar sesión: ${e.toString()}'));
     }
   }
+
+  Future<int?> _getTutorIdFromUserId(int userId) async {
+    // Asumimos que el ID del tutor es el mismo que el ID del usuario
+    return userId;
+  }
+
+
 
   Future<void> _onAuthRegisterRequested(
       AuthRegisterRequested event,
