@@ -5,6 +5,7 @@ import 'package:safechild/modelo/beans/Caregiver.dart';
 import 'package:safechild/modelo/beans/ListCaregiver.dart';
 
 import '../../config/ApiConfig.dart';
+import '../beans/Schedule.dart';
 
 class AppointService{
 
@@ -27,6 +28,21 @@ class AppointService{
         print(stack);
         return [];
       }
+    } else {
+      return [];
+    }
+  }
+
+  Future<List<Schedule>> getSchedulesByCaregiverId(int caregiverId) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.getSchedule}/$caregiverId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final jsonList = json.decode(response.body);
+      return (jsonList as List)
+          .map((e) => Schedule.fromJson(e))
+          .toList();
     } else {
       return [];
     }
