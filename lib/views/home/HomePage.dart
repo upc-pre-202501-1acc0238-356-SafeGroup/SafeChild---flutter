@@ -7,6 +7,7 @@ import '../iam/LoginPage.dart';
 import '../profile/ProfilePage.dart';
 import '../payments/PaymentButton.dart';
 import '../reservations/ReservationHistoryView.dart';
+import '../appointments/SchedulesListPage.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -60,11 +61,12 @@ class HomePage extends StatelessWidget {
                     title: Text('Citas'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => SchedulesListPage()));
                     },
                   ),
                   ListTile(
                     leading: Icon(Icons.history_outlined),
-                    title: Text('Historiall de cita'),
+                    title: Text('Historial de cita'),
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => Reservationhistory()));
                     },
