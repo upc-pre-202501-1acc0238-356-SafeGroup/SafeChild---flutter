@@ -7,7 +7,6 @@ class ApiConfig {
   // Si usas emulador de Android
   // static const String baseUrl = 'http://10.0.2.2:8080/api/v1';
   // Para producción
- // static const String baseUrl = 'https://safechild-lastdeploy-a8ahd7ccc8b4cjb3.canadacentral-01.azurewebsites.net/api/v1';
   static const String baseUrl = 'http://192.168.18.21:8093/api/v1';
 
   // Authentication endpoints (IAM)
@@ -25,6 +24,12 @@ class ApiConfig {
 
 
   //static final String reservationsAPIUrl = '$envBaseUrl + /reservations';
+
+  // Caregiver endpoints
+  static const String getCaregivers = '$baseUrl/caregiver';
+
+  // Caregiver schedule endpoints
+  static const String getSchedule = '$baseUrl/schedules/caregiver';
 
 
 }
