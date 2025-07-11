@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConfig {
   // Base URL for the API
   // Si usas web
@@ -10,8 +12,19 @@ class ApiConfig {
   // Authentication endpoints (IAM)
   static const String signUp = '$baseUrl/authentication/sign-up';
   static const String signIn = '$baseUrl/authentication/sign-in';
+  static const String reservationsAPIUrl = '$baseUrl/reservations';
 
   // Función para crear URLs de recursos
   static String resource(String path) => '$baseUrl$path';
+
+
+
+  static final envBaseUrl  = '${dotenv.env['URL_BACKEND_PRODUCTION']}/api/v1';
+  //static final envBaseUrl  = 'http://192.168.18.21:8093/api/v1';
+
+
+
+  //static final String reservationsAPIUrl = '$envBaseUrl + /reservations';
+
 
 }

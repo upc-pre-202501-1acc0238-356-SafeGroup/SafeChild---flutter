@@ -5,7 +5,8 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../iam/LoginPage.dart';
 import '../profile/ProfilePage.dart';
-import '../payments/payment.dart';
+import '../payments/PaymentButton.dart';
+import '../reservations/ReservationHistoryView.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -59,6 +60,13 @@ class HomePage extends StatelessWidget {
                     title: Text('Citas'),
                     onTap: () {
                       Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.history_outlined),
+                    title: Text('Historiall de cita'),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => Reservationhistory()));
                     },
                   ),
                   ListTile(

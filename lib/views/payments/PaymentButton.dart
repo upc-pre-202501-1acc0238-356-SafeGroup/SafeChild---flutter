@@ -50,7 +50,7 @@ class _PaymentState extends State<Payment> {
   }
 //TODO: hacer dinamico el amount
   Map<String,dynamic>? intentPaymentData;
-
+  var amount = 100.0;
   showPaymentSheet() async
   {
     try{
@@ -95,8 +95,7 @@ class _PaymentState extends State<Payment> {
       };
 
       var response = await http.post(
-        //   Uri.parse("http://192.168.18.21:8093/api/v1/payments"),
-        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}"),
+        Uri.parse("${dotenv.env['URL_BACKEND_PRODUCTION']}"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -106,7 +105,9 @@ class _PaymentState extends State<Payment> {
       if (response.statusCode != 200) {
         throw Exception("Stripe error: ${response.statusCode}, ${response.body}");
       }
-      print("response = " + response.body);
+      if (kDebugMode) {
+        print("response = ${response.body}");
+      }
       return jsonDecode(response.body);
 
 
