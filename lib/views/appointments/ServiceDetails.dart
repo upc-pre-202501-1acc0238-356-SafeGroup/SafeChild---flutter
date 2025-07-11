@@ -78,8 +78,8 @@ class _ServiceDetailsState extends State<ServiceDetails> {
               child: ElevatedButton(
                 child: Text(shift.shift),
                 onPressed: () {
-                  // Aquí puedes manejar la selección del turno
                   Navigator.of(context).pop();
+                  _showTimeInputDialog(context, schedule, shift);
                 },
               ),
             );
@@ -91,6 +91,126 @@ class _ServiceDetailsState extends State<ServiceDetails> {
             child: const Text('Cerrar'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showTimeInputDialog(BuildContext context, Schedule schedule, ScheduleShift shift) {
+    final startController = TextEditingController();
+    final endController = TextEditingController();
+    String? errorText; // Declarar aquí
+
+    // Definir rangos según el turno
+    TimeOfDay minTime, maxTime;
+    switch (shift.shift) {
+      case 'MORNING':
+        minTime = const TimeOfDay(hour: 6, minute: 0);
+        maxTime = const TimeOfDay(hour: 11, minute: 0);
+        break;
+      case 'AFTERNOON':
+        minTime = const TimeOfDay(hour: 12, minute: 0);
+        maxTime = const TimeOfDay(hour: 17, minute: 0);
+        break;
+      case 'EVENING':
+        minTime = const TimeOfDay(hour: 18, minute: 0);
+        maxTime = const TimeOfDay(hour: 23, minute: 0);
+        break;
+      default:
+        minTime = const TimeOfDay(hour: 0, minute: 0);
+        maxTime = const TimeOfDay(hour: 23, minute: 59);
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          void validateAndSubmit() {
+            final startText = startController.text;
+            final endText = endController.text;
+
+            try {
+              final start = TimeOfDay(
+                hour: int.parse(startText.split(':')[0]),
+                minute: int.parse(startText.split(':')[1]),
+              );
+              final end = TimeOfDay(
+                hour: int.parse(endText.split(':')[0]),
+                minute: int.parse(endText.split(':')[1]),
+              );
+
+              // Validar que los minutos sean 00
+              if (start.minute != 0 || end.minute != 0) {
+                setState(() {
+                  errorText = 'Solo se permiten horas en punto (minutos 00).';
+                });
+                return;
+              }
+
+              bool inRange(TimeOfDay t) =>
+                  (t.hour > minTime.hour || (t.hour == minTime.hour && t.minute >= minTime.minute)) &&
+                      (t.hour < maxTime.hour || (t.hour == maxTime.hour && t.minute <= maxTime.minute));
+
+              if (!inRange(start) || !inRange(end)) {
+                setState(() {
+                  errorText = 'Las horas deben estar dentro del turno seleccionado.';
+                });
+              } else {
+                final startMinutes = start.hour * 60 + start.minute;
+                final endMinutes = end.hour * 60 + end.minute;
+                if (endMinutes - startMinutes < 60) {
+                  setState(() {
+                    errorText = 'La diferencia debe ser de al menos 1 hora.';
+                  });
+                } else if (endMinutes <= startMinutes) {
+                  setState(() {
+                    errorText = 'La hora de fin debe ser mayor a la de inicio.';
+                  });
+                } else {
+                  Navigator.of(context).pop();
+                  // Aquí puedes continuar con el POST de la reserva
+                }
+              }
+            } catch (e) {
+              setState(() {
+                errorText = 'Formato de hora inválido. Usa HH:mm';
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: Text('Ingrese hora de inicio y fin (${shift.shift})'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: startController,
+                  decoration: const InputDecoration(labelText: 'Hora de inicio (HH:mm)'),
+                  keyboardType: TextInputType.datetime,
+                ),
+                TextField(
+                  controller: endController,
+                  decoration: const InputDecoration(labelText: 'Hora de fin (HH:mm)'),
+                  keyboardType: TextInputType.datetime,
+                ),
+                if (errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(errorText!, style: const TextStyle(color: Colors.red)),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: validateAndSubmit,
+                child: const Text('Reservar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

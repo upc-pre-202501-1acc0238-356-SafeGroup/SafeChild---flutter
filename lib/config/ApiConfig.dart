@@ -16,7 +16,8 @@ class ApiConfig {
   static const String getCaregivers = '$baseUrl/caregiver';
 
   // Caregiver schedule endpoints
-  static const String getSchedule = '$baseUrl/schedules/caregiver/';
+  static const String getSchedule = '$baseUrl/schedules/caregiver';
 
-  // Appointment endpoints
+  // Reservations endpoints
+  static const String getReservations = '$baseUrl/reservations';
 }
