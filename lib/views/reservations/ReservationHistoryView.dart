@@ -28,7 +28,7 @@ class _ReservationhistoryState extends State<Reservationhistory> {
     }
 
     if (token != null && tutorId != null) {
-      reservationsBloc.add(ReservationsInitialFetchEvent(token, tutorId));
+      reservationsBloc.add(ReservationsInitialFetchEvent(token: token, tutorId: tutorId));
     } else {
       print("User not authenticated o faltan datos");
     }

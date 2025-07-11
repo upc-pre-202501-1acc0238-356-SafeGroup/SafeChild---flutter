@@ -7,7 +7,6 @@ class ReservationDataModel {
   String endTime;
   String? status;
   double totalAmount;
-
   ReservationDataModel({
     this.id,
     required this.caregiverId,

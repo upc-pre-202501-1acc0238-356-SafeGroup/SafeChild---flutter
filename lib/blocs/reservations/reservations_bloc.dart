@@ -15,7 +15,7 @@ class ReservationsBloc extends Bloc<ReservationsEvent, ReservationsState> {
       ReservationsInitialFetchEvent event,
       Emitter<ReservationsState> emit,
       ) async {
-    print("ReservationsBloc: Starting fetch for tutorId: ${event.tutorId}"); // Debug
+//    print("ReservationsBloc: Starting fetch for tutorId: ${event.tutorId}"); // Debug
 
     try {
       // Emitir estado de carga opcional
