@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../blocs/reservations/reservations_bloc.dart';
 import '../../models/schedule.dart';
 import '../../models/scheduleShift.dart';
 import '../../services/appoint_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:safechild/blocs/auth/auth_bloc.dart';
+import 'package:safechild/blocs/auth/auth_state.dart';
 
 class ScheduleDetailsPage extends StatefulWidget {
   final dynamic caregiver;
@@ -14,6 +18,29 @@ class ScheduleDetailsPage extends StatefulWidget {
 }
 
 class _ScheduleDetailsPageState extends State<ScheduleDetailsPage> {
+
+  final ReservationsBloc reservationsBloc = ReservationsBloc();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final authState = context.read<AuthBloc>().state;
+     String? token;
+     int? tutorId;
+
+    if (authState is AuthAuthenticated) {
+      token = authState.user.token;
+      tutorId = authState.tutorId;
+    }
+
+   // if (token != null && tutorId != null) {
+    //  reservationsBloc.add(ReservationsInitialFetchEvent(token: token, tutorId: tutorId));
+   // } else {
+     // print("User not authenticated o faltan datos");
+    ///}
+  }
+
 
   Future<void> _showDaysDialog(BuildContext context) async {
     final schedules = await AppointService().getSchedulesByCaregiverId(widget.caregiver.id);
