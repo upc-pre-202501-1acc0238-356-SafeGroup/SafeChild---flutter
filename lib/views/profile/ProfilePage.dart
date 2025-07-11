@@ -72,82 +72,85 @@ class _ProfilePageState extends State<ProfilePage> {
           if (state is ProfileLoading) {
             return Center(child: CircularProgressIndicator(color: Colors.white));
           } else if (state is ProfileLoaded) {
-            final tutor = state.tutor;
-            _numberController.text = tutor.number;
-            _streetController.text = tutor.street;
-            _selectedDistrict = _selectedDistrict ?? tutor.district;
+    final tutor = state.tutor;
+    _numberController.text = tutor.number;
+    _streetController.text = tutor.street;
+    _selectedDistrict = _selectedDistrict ?? tutor.district;
 
-            return BlocListener<ProfileBloc, ProfileState>(
-              listener: (context, state) {
-                if (state is ProfileUpdateSuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Perfil actualizado con éxito'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  setState(() => updating = false);
-                } else if (state is ProfileError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  setState(() => updating = false);
-                }
-              },
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    children: [
-                      _readonlyField('Nombre completo', tutor.fullName),
-                      SizedBox(height: 16),
-                      _readonlyField('Correo electrónico', tutor.email),
-                      SizedBox(height: 16),
-                      _readonlyField('Documento', tutor.doc),
-                      SizedBox(height: 16),
-                      _editableField(
-                          'Número de teléfono',
-                          _numberController,
-                          r'^\d{9}$',
-                          'Ingrese un número válido (9 dígitos)'
-                      ),
-                      SizedBox(height: 16),
-                      _editableField(
-                          'Calle',
-                          _streetController,
-                          r'^.+$',
-                          'Ingrese una calle válida'
-                      ),
-                      SizedBox(height: 16),
-                      _districtDropdown(),
-                      SizedBox(height: 32),
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFD0D9DB),
-                            foregroundColor: Colors.black87,
-                            textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: updating ? null : _updateProfile,
-                          child: updating
-                              ? CircularProgressIndicator(color: Colors.black)
-                              : Text('Actualizar perfil'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          } else if (state is ProfileError) {
+    return BlocListener<ProfileBloc, ProfileState>(
+    listener: (context, state) {
+    if (state is ProfileUpdateSuccess) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+    content: Text('Perfil actualizado con éxito'),
+    backgroundColor: Colors.green,
+    ),
+    );
+    setState(() => updating = false);
+    } else if (state is ProfileError) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+    content: Text(state.message),
+    backgroundColor: Colors.red,
+    ),
+    );
+    setState(() => updating = false);
+    }
+    },
+    child: Padding(
+    padding: EdgeInsets.all(16),
+    child: Form(
+    key: _formKey,
+    child: ListView(
+    children: [
+    _readonlyField('Nombre completo', tutor.fullName),
+    SizedBox(height: 16),
+    _readonlyField('Correo electrónico', tutor.email),
+    SizedBox(height: 16),
+    _readonlyField('Documento', tutor.doc),
+    SizedBox(height: 16),
+    _editableField(
+    'Número de teléfono',
+    _numberController,
+    r'^\d{9}$',
+    'Ingrese un número válido (9 dígitos)'
+    ),
+    SizedBox(height: 16),
+    _editableField(
+    'Calle',
+    _streetController,
+    r'^.+$',
+    'Ingrese una calle válida'
+    ),
+    SizedBox(height: 16),
+    _districtDropdown(),
+    SizedBox(height: 32),
+    SizedBox(
+    height: 56,
+    child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFFD0D9DB),
+    foregroundColor: Colors.black87,
+    textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+    ),
+    ),
+    onPressed: updating ? null : _updateProfile,
+    child: updating
+    ? CircularProgressIndicator(color: Colors.black)
+        : Text('Actualizar perfil'),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ),
+    );
+
+    } else if (state is ProfileError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
