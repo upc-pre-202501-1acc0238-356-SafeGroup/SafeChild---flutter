@@ -5,7 +5,6 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../iam/LoginPage.dart';
 import '../profile/ProfilePage.dart';
-import '../payments/PaymentButton.dart';
 import '../reservations/ReservationHistoryView.dart';
 import '../appointments/SchedulesListPage.dart';
 
@@ -76,7 +75,7 @@ class HomePage extends StatelessWidget {
                     title: Text('Pagos'),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => Payment()));
+                 //     Navigator.push(context, MaterialPageRoute(builder: (_) => Payment()));
                     },
                   ),
                   Spacer(),
