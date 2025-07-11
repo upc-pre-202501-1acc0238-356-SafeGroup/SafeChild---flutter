@@ -1,12 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
-import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_state.dart';
 
 class Payment extends StatefulWidget {
   const Payment({super.key});
@@ -16,28 +14,15 @@ class Payment extends StatefulWidget {
 }
 
 class _PaymentState extends State<Payment> {
-  double amount = 4.55;
-  Map<String, dynamic>? intentPaymentData;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0EA5AA),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF0EA5AA),
-        elevation: 0,
-        title: Text('Pagos', style: TextStyle(color: Colors.white)),
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Monto a pagar: \$${amount.toStringAsFixed(2)}',
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ),
-            SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFD0D9DB),
@@ -47,108 +32,212 @@ class _PaymentState extends State<Payment> {
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () async {
-                await makeIntentForPayment(amount.toString(), 'USD');
-                if (intentPaymentData != null) {
-                  await showPaymentSheet();
-                }
+                await paymentSheetInitialization(
+                    amount.round().toString(),
+                    "USD"
+                );
               },
-              child: Text('Realizar Pago'),
-            ),
+              child: const Text(
+                "Make Payment",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+
           ],
-        ),
+        ) ,
       ),
     );
   }
+//TODO: hacer dinamico el amount
+  Map<String,dynamic>? intentPaymentData;
 
-  showPaymentSheet() async {
-    try {
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: intentPaymentData!['clientSecret'],
-          style: ThemeMode.dark,
-          merchantDisplayName: "SafeChild",
-        ),
-      );
+  showPaymentSheet() async
+  {
+    try{
+      await Stripe.instance.presentPaymentSheet().then((value){
+        intentPaymentData = null;
+      }).onError((errorMsg,sTrace){
+        if(kDebugMode){
+          print(sTrace);
+        }
+        print(errorMsg.toString() + sTrace.toString());
+      });
 
-      await Stripe.instance.presentPaymentSheet();
+      print("Intentando crear showPaymentSheet...");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('¡Pago completado con éxito!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } on StripeException catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${error.error.localizedMessage}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } catch (errorMsg) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $errorMsg'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+    }
+    on StripeException catch(error){
+      if(kDebugMode){
+        print(error);
+      }
+      showDialog(
+          context: context,
+          builder: (c)=> AlertDialog(
+            content: Text("Cancelled"),
+          ));
+    }
+    catch(errorMsg){
+      if(kDebugMode){
+        print(errorMsg);
+      }
+      print(errorMsg.toString());
     }
   }
 
-  makeIntentForPayment(amountToBeCharge, currency) async {
+
+  makeIntentForPayment(amountToBeCharge, currency) async
+  {
     try {
-      // Aquí obtenemos el token del AuthBloc en lugar de AuthViewModel
-      final authState = context.read<AuthBloc>().state;
-      String? token;
-
-      if (authState is AuthAuthenticated) {
-        token = authState.user.token;
-      }
-
-      if (token == null) {
-        throw Exception('No autenticado');
-      }
-
-      int amountCents = (double.parse(amountToBeCharge) * 100).round();
-      if (amountCents < 50) {
-        throw Exception('El monto mínimo es 0.50 USD');
-      }
-
       Map<String, dynamic> paymentInfo = {
         'currency': currency,
-        'amount': amountCents,
-        'reservationId': 2, // Cambia esto según tu lógica
+        'reservation': 1,
       };
 
       var response = await http.post(
-        Uri.parse(dotenv.env['URL_BACKEND_LOCAL']!),
+        //   Uri.parse("http://192.168.18.21:8093/api/v1/payments"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}"),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode(paymentInfo),
       );
 
-      if (response.statusCode == 200) {
-        intentPaymentData = json.decode(response.body);
-        return true;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al procesar el pago: ${response.body}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
+      if (response.statusCode != 200) {
+        throw Exception("Stripe error: ${response.statusCode}, ${response.body}");
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
+      print("response = " + response.body);
+      return jsonDecode(response.body);
+
+
+    } catch(errorMsg){
+      if(kDebugMode){
+        print(errorMsg);
+      }
+      print(errorMsg.toString());
     }
   }
+
+  Future<void> paymentStatusActualization(int paymentId) async {
+    try {
+      // 1. Obtener los datos del Payment desde tu backend
+      final paymentResponse = await http.get(
+        //    Uri.parse("http://192.168.18.21:8090/api/v1/payments/$paymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/$paymentId"),
+      );
+
+      if (paymentResponse.statusCode != 200) {
+        throw Exception("Error al obtener el Payment: ${paymentResponse.body}");
+      }
+
+      final paymentData = jsonDecode(paymentResponse.body);
+      final stripePaymentId = paymentData['stripePaymentId'];
+
+      if (stripePaymentId == null || stripePaymentId.isEmpty) {
+        throw Exception("stripePaymentId no encontrado.");
+      }
+
+      final stripeIntentResponse = await http.get(
+        //Uri.parse("http://192.168.18.21:8090/api/v1/payments/paymentIntent/$stripePaymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/paymentIntent/$stripePaymentId"),
+      );
+
+      if (stripeIntentResponse.statusCode != 200) {
+        throw Exception("Error al consultar el PaymentIntent: ${stripeIntentResponse.body}");
+      }
+
+      final stripeData = jsonDecode(stripeIntentResponse.body);
+      final stripeStatus = stripeData['status'].toString().toUpperCase();
+
+      final updateResponse = await http.put(
+        // Uri.parse("http://192.168.18.21:8090/api/v1/payments/status/$paymentId"),
+        Uri.parse("${dotenv.env['URL_BACKEND_LOCAL']}/status/$paymentId"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "paymentStatus": stripeStatus,
+        }),
+      );
+
+
+      if (updateResponse.statusCode == 200) {
+        print("✅ Estado actualizado correctamente en el backend.");
+
+        // 👇 Aquí muestra el SnackBar al usuario
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ Pago realizado y confirmado exitosamente."),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        print("❌ Error al actualizar el estado en el backend: ${updateResponse.body}");
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("⚠️ No se pudo actualizar el estado del pago: ${updateResponse.body}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
+
+      if (updateResponse.statusCode == 200) {
+        print("✅ Estado actualizado correctamente en el backend.");
+      } else {
+        print("❌ Error al actualizar el estado en el backend: ${updateResponse.body}");
+      }
+    } catch (e) {
+      print("❌ Error en el flujo de actualización de estado: $e");
+    }
+  }
+
+
+
+
+  paymentSheetInitialization(amountToBeCharge, currency) async {
+    try {
+      intentPaymentData = await makeIntentForPayment(amountToBeCharge, currency);
+
+      if (intentPaymentData == null || intentPaymentData!['client_secret'] == null) {
+        showDialog(
+          context: context,
+          builder: (c) => const AlertDialog(
+            content: Text("Error al crear el PaymentIntent. Revisa tu clave y conexión."),
+          ),
+        );
+        return;
+      }
+
+      final paymentId = intentPaymentData?['payment_id'];
+      if (paymentId == null) {
+        throw Exception("payment_id no encontrado en la respuesta.");
+      }
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          allowsDelayedPaymentMethods: true,
+          merchantDisplayName: "SafeChild merchant",
+          paymentIntentClientSecret: intentPaymentData!['client_secret'],
+          style: ThemeMode.system,
+        ),
+      );
+
+      await showPaymentSheet(); // usa await aquí para esperar finalización
+      await Future.delayed(const Duration(seconds: 3)); // pequeña espera por seguridad
+      await paymentStatusActualization(paymentId);
+
+    } catch (error, s) {
+      if (kDebugMode) print(s);
+      print("❌ Error en paymentSheetInitialization: $error");
+    }
+  }
+
+
+
 }
