@@ -76,7 +76,7 @@ class ReservationDataModel {
       'id': id,
       'caregiverId': caregiverId,
       'tutorId': tutorId,
-      'date': formattedDateTime, // ¡este campo estaba faltando!
+      'date': formattedDateTime,
       'startTime': formattedStartDateTime,
       'endTime': formattedEndDateTime,
       'status': status,

@@ -4,18 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
+import 'package:safechild/config/ApiConfig.dart';
 
 class Paymentbutton extends StatefulWidget {
   final int reservationId;
-  final double amount;
-  final String currency;
-
+  final currency = "USD"; // Default currency, can be changed if needed
   const Paymentbutton({
-    Key? key,
+    super.key,
     required this.reservationId,
-    this.amount = 100.0,
-    this.currency = 'USD',
-  }) : super(key: key);
+    currency = "USD",
+  });
 
   @override
   State<Paymentbutton> createState() => _PaymentbuttonState();
@@ -35,19 +33,15 @@ class _PaymentbuttonState extends State<Paymentbutton> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
       onPressed: () async {
-        await _paymentSheetInitialization(
-          widget.amount.round().toString(),
-          widget.currency,
-          widget.reservationId,
-        );
+        await _paymentSheetInitialization(widget.reservationId);
       },
       child: const Text("Pagar", style: TextStyle(color: Colors.white)),
     );
   }
 
-  Future<void> _paymentSheetInitialization(String amount, String currency, int reservationId) async {
+  Future<void> _paymentSheetInitialization(int reservationId) async {
     try {
-      intentPaymentData = await _makeIntentForPayment(amount, currency, reservationId);
+      intentPaymentData = await _makeIntentForPayment(reservationId);
 
       if (intentPaymentData == null || intentPaymentData!['client_secret'] == null) {
         _showDialog("Error al crear el PaymentIntent. Revisa tu clave y conexión.");
@@ -88,15 +82,15 @@ class _PaymentbuttonState extends State<Paymentbutton> {
     }
   }
 
-  Future<Map<String, dynamic>?> _makeIntentForPayment(String amount, String currency, int reservationId) async {
+  Future<Map<String, dynamic>?> _makeIntentForPayment(int reservationId) async {
     try {
       final Map<String, dynamic> paymentInfo = {
-        'currency': currency,
         'reservation': reservationId,
+        'currency': widget.currency,
       };
 
       final response = await http.post(
-        Uri.parse("${dotenv.env['URL_BACKEND_PRODUCTION']}"),
+        Uri.parse(ApiConfig.paymentAPIURL),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(paymentInfo),
       );
@@ -114,7 +108,7 @@ class _PaymentbuttonState extends State<Paymentbutton> {
 
   Future<void> _paymentStatusActualization(int paymentId) async {
     try {
-      final baseUrl = dotenv.env['URL_BACKEND_LOCAL'];
+      final baseUrl = ApiConfig.paymentAPIURL;
 
       final paymentResponse = await http.get(Uri.parse("$baseUrl/$paymentId"));
       if (paymentResponse.statusCode != 200) throw Exception("Error al obtener el Payment");

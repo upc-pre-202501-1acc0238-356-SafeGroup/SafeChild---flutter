@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:safechild/blocs/reservations/reservations_bloc.dart';
 import 'package:safechild/blocs/auth/auth_bloc.dart';
 import 'package:safechild/blocs/auth/auth_state.dart';
+import 'package:safechild/views/payments/Paymentbutton.dart';
 
 
 class Reservationhistory extends StatefulWidget {
@@ -99,7 +100,13 @@ class _ReservationhistoryState extends State<Reservationhistory> {
                               Icon(Icons.access_time, color: Colors.orange.shade400),
                               const SizedBox(width: 8),
                               Text("Inicio: ${reservation.startTime}"),
-                              const SizedBox(width: 16),
+
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Icon(Icons.share_arrival_time, color: Colors.orange.shade400),
+                              const SizedBox(width: 8),
                               Text("Fin: ${reservation.endTime}"),
                             ],
                           ),
@@ -115,18 +122,7 @@ class _ReservationhistoryState extends State<Reservationhistory> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    // Acción de pago aquí
-                                  },
-                                  child: const Text("Pagar reserva"),
+                                Paymentbutton( reservationId: reservation.id ?? 0 ,   // ID de la reserva en backend
                                 ),
                               ],
                             ),
