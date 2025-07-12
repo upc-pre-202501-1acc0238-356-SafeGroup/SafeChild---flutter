@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../blocs/reservations/reservations_bloc.dart';
+import '../../models/ReservationDataModel.dart';
 import '../../models/schedule.dart';
 import '../../models/scheduleShift.dart';
 import '../../services/appoint_service.dart';
@@ -19,26 +20,16 @@ class ScheduleDetailsPage extends StatefulWidget {
 
 class _ScheduleDetailsPageState extends State<ScheduleDetailsPage> {
 
+  int? tutorId;
   final ReservationsBloc reservationsBloc = ReservationsBloc();
 
   @override
   void initState() {
     super.initState();
-
     final authState = context.read<AuthBloc>().state;
-     String? token;
-     int? tutorId;
-
     if (authState is AuthAuthenticated) {
-      token = authState.user.token;
-      tutorId = authState.tutorId;
+      tutorId = authState.tutorId; // Asigna al campo de la clase
     }
-
-   // if (token != null && tutorId != null) {
-    //  reservationsBloc.add(ReservationsInitialFetchEvent(token: token, tutorId: tutorId));
-   // } else {
-     // print("User not authenticated o faltan datos");
-    ///}
   }
 
 
@@ -234,8 +225,64 @@ class _ScheduleDetailsPageState extends State<ScheduleDetailsPage> {
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
-                onPressed: validateAndSubmit,
-                child: const Text('Reservar'),
+                onPressed: () async {
+
+                  if (tutorId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se encontró el tutor. Inicia sesión nuevamente.')),
+                    );
+                    return;
+                  }
+
+                  final startText = startController.text;
+                  final endText = endController.text;
+
+                  // Parsear horas
+                  final start = TimeOfDay(
+                    hour: int.parse(startText.split(':')[0]),
+                    minute: int.parse(startText.split(':')[1]),
+                  );
+                  final end = TimeOfDay(
+                    hour: int.parse(endText.split(':')[0]),
+                    minute: int.parse(endText.split(':')[1]),
+                  );
+
+                  // Calcular horas de diferencia
+                  final startMinutes = start.hour * 60 + start.minute;
+                  final endMinutes = end.hour * 60 + end.minute;
+                  final hours = (endMinutes - startMinutes) / 60.0;
+
+                  // Calcular monto total
+                  final totalAmount = hours * widget.caregiver.farePerHour;
+
+                  final reservation = ReservationDataModel(
+                    caregiverId: widget.caregiver.id,
+                    tutorId: tutorId!,
+                    date: schedule.availableDate,
+                    startTime: startText,
+                    endTime: endText,
+                    totalAmount: totalAmount,
+                  );
+                  print('Datos de la reserva:');
+                  print('caregiverId: ${widget.caregiver.id}');
+                  print('tutorId: $tutorId');
+                  print('date: ${schedule.availableDate}');
+                  print('startTime: $startText');
+                  print('endTime: $endText');
+                  print('totalAmount: $totalAmount');
+                  try {
+                    final result = await AppointService.createReservation(reservation);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Reserva creada exitosamente')),
+                    );
+                    Navigator.pop(context);
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al crear la reserva')),
+                    );
+                  }
+                },
+                child: Text('Reservar'),
               ),
             ],
           );

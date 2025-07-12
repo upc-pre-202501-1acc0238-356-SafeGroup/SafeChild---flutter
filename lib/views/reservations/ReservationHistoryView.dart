@@ -39,7 +39,10 @@ class _ReservationhistoryState extends State<Reservationhistory> {
     return BlocProvider(
       create: (context) => reservationsBloc,
       child: Scaffold(
-        appBar: AppBar(title: const Text("Historial de Reservas")),
+        appBar: AppBar(
+          title: const Text("Historial de Reservas"),
+          backgroundColor: Colors.blue.shade700,
+        ),
         body: BlocConsumer<ReservationsBloc, ReservationsState>(
           listener: (context, state) {},
           builder: (context, state) {
@@ -49,17 +52,83 @@ class _ReservationhistoryState extends State<Reservationhistory> {
                 itemBuilder: (context, index) {
                   final reservation = state.reservations[index];
                   return Card(
-                    margin: const EdgeInsets.all(8),
-                    child: ListTile(
-                      title: Text("Reserva ID: ${reservation.id}"),
-                      subtitle: Column(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    color: Colors.blue.shade50,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Caregiver: ${reservation.caregiverId}"),
-                          Text("Fecha: ${reservation.date}"),
-                          Text("Inicio: ${reservation.startTime}"),
-                          Text("Fin: ${reservation.endTime}"),
-                          Text("Estado: ${reservation.status ?? 'Sin estado'}"),
+                          Row(
+                            children: [
+                              Icon(Icons.assignment_turned_in, color: Colors.blue.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Reserva #${reservation.id}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 20, thickness: 1),
+                          Row(
+                            children: [
+                              Icon(Icons.person, color: Colors.blue.shade400),
+                              const SizedBox(width: 8),
+                              Text("Cuidador: ${reservation.caregiverId}"),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.green.shade400),
+                              const SizedBox(width: 8),
+                              Text("Fecha: ${reservation.date}"),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.access_time, color: Colors.orange.shade400),
+                              const SizedBox(width: 8),
+                              Text("Inicio: ${reservation.startTime}"),
+                              const SizedBox(width: 16),
+                              Text("Fin: ${reservation.endTime}"),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.purple.shade400),
+                              const SizedBox(width: 8),
+                              Text("Estado: ${reservation.status ?? 'Sin estado'}"),
+                            ],
+                          ),
+                          if (reservation.status == "PENDING")
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    // Acción de pago aquí
+                                  },
+                                  child: const Text("Pagar reserva"),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),

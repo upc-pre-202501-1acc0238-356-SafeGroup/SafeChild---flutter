@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../config/ApiConfig.dart';
+import '../models/ReservationDataModel.dart';
 import '../models/caregiver.dart';
 import '../models/listCaregiver.dart';
 import '../models/schedule.dart';
@@ -45,6 +46,20 @@ class AppointService{
           .toList();
     } else {
       return [];
+    }
+  }
+
+  static Future<bool> createReservation(ReservationDataModel reservation) async {
+    final response = await http.post(
+      Uri.parse(ApiConfig.reservation),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(reservation.toJson()),
+    );
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return true;
+    } else {
+      print('Error al crear la reserva: ${response.body}');
+      return false;
     }
   }
 
