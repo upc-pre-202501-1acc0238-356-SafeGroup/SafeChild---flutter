@@ -10,6 +10,9 @@ class ReservationFetchingSuccessfullState extends ReservationsState {
   final List<ReservationDataModel> reservations;
 
   ReservationFetchingSuccessfullState({required this.reservations});
+
+
+
 }
 
 class ReservationFetchingErrorState extends ReservationsState {

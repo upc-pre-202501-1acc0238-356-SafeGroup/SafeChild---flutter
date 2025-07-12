@@ -14,7 +14,10 @@ class AppointService{
     print('Llamando a getCaregivers');
     final response = await http.get(
       Uri.parse(ApiConfig.getCaregivers),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     );
     print('Respuesta recibida: ${response.statusCode}');
     if (response.statusCode == 200) {
@@ -29,9 +32,10 @@ class AppointService{
         print(stack);
         return [];
       }
-    } else {
-      return [];
-    }
+   } else {
+     print('Error al obtener caregivers: ${response.statusCode} - ${response.body}');
+     return [];
+   }
   }
 
   Future<List<Schedule>> getSchedulesByCaregiverId(int caregiverId) async {

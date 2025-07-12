@@ -67,17 +67,21 @@ class ReservationDataModel {
     return 'ReservationDataModel{id: $id, caregiverId: $caregiverId, tutorId: $tutorId, date: $date, startTime: $startTime, endTime: $endTime, status: $status, totalAmount: $totalAmount}';
   }
 
-  // Método para convertir a JSON
   Map<String, dynamic> toJson() {
+    String formattedStartDateTime = '${date}T${startTime}:00';
+    String formattedEndDateTime = '${date}T${endTime}:00';
+    String formattedDateTime = '${date}T${startTime}:00'; // usar misma hora que startTime o una estándar
+
     return {
       'id': id,
       'caregiverId': caregiverId,
       'tutorId': tutorId,
-      'date': date,
-      'startTime': startTime,
-      'endTime': endTime,
+      'date': formattedDateTime, // ¡este campo estaba faltando!
+      'startTime': formattedStartDateTime,
+      'endTime': formattedEndDateTime,
       'status': status,
       'totalAmount': totalAmount,
     };
   }
+
 }
